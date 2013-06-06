@@ -2,11 +2,12 @@ from __future__ import print_function
 
 # Setup the Django environment so we can access our models
 import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hackernews.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HackerNews.settings')
 
 import sys
 import json
-import urllib2
+from urllib.request import urlopen
+from urllib.error import HTTPError
 
 from datetime import datetime, timedelta
 
@@ -54,22 +55,25 @@ def main():
     # Attempt to retrieve and process the data from the Unoffical Hacker News API
     for i in range(RETRY_ATTEMPTS + 1):
         try:
-            response = urllib2.urlopen(HACKER_NEWS_API_URL)
+            response = urlopen(HACKER_NEWS_API_URL)
             status_code = response.code
-        except urllib2.HTTPError, e:
+        except HTTPError as e:
             status_code = e.code
+            print (e.code)
+
 
         # If the service errored, hit it again
         if status_code != 200:
             if i <= RETRY_ATTEMPTS:
                 print("An error occured while retrieving the data, retrying (%d)..." % (i+1), file=sys.stderr)
+                print (status_code.__str__())
             continue
 
         # If everything went ok, try to load the data
         try:
-            items = json.load(response)['items']
+            items = json.loads(response.read().decode('utf-8'))['items']
             break
-        except ValueError, e:
+        except ValueError as e:
             if i <= RETRY_ATTEMPTS:
                 print("An error occurred while loading the data, retrying (%d)..." % i+1, file=sys.stderr)
             continue
